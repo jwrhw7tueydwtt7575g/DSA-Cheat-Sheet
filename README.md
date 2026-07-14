@@ -208,3 +208,202 @@
 5. Is it **"all possible ___"**? → Backtracking.
 6. Is it **"next/previous greater-smaller"**? → Monotonic stack.
 7. Is it **top-K / streaming**? → Heap.
+
+
+
+------------------------------//------------------------------------------------------------------------
+
+
+# System Design Cheat Sheet — "Need X → Use Y"
+
+A quick-reference mapping common system needs to the tech usually used for them in real-world, large-scale applications.
+
+---
+
+## 1. Client ↔ Server Entry Points
+
+| Need | Common Tech |
+|---|---|
+| Load balancing traffic | Nginx, HAProxy, AWS ELB/ALB, Envoy |
+| API Gateway (routing, auth, rate limit) | Kong, AWS API Gateway, Apigee, Envoy |
+| DNS / global traffic routing | Route53, Cloudflare DNS |
+| CDN (static assets, images, video) | Cloudflare, Akamai, AWS CloudFront, Fastly |
+| Reverse proxy / TLS termination | Nginx, Envoy, Traefik |
+
+---
+
+## 2. Core Backend
+
+| Need | Common Tech |
+|---|---|
+| Web/app servers | Node.js (Express/NestJS), Spring Boot (Java), Django/FastAPI (Python), Go (Gin/Fiber) |
+| Microservices communication (sync) | REST, gRPC |
+| Service discovery | Consul, Eureka, Kubernetes DNS |
+| API contracts | OpenAPI/Swagger, Protobuf (for gRPC) |
+| Background/async jobs | Celery, Sidekiq, BullMQ, Temporal |
+
+---
+
+## 3. Messaging / Async Communication
+
+| Need | Common Tech |
+|---|---|
+| Event streaming / high-throughput pub-sub | **Apache Kafka**, Redpanda |
+| Simple task queues | RabbitMQ, AWS SQS, BullMQ |
+| Pub/Sub for real-time fan-out | Redis Pub/Sub, Google Pub/Sub, NATS |
+| Event-driven architecture backbone | Kafka + Kafka Streams / Flink |
+| Delayed/scheduled jobs | SQS with delay, Redis + BullMQ, cron + queue |
+
+**Pattern:** `Producer service → Kafka topic → Consumer service(s)` for decoupling, buffering spikes, and enabling multiple downstream consumers (analytics, notifications, audit log) off a single event.
+
+---
+
+## 4. Caching
+
+| Need | Common Tech |
+|---|---|
+| In-memory key-value cache | **Redis**, Memcached |
+| Application-level cache (DB query result cache) | Redis (with TTL) |
+| CDN edge caching | Cloudflare, CloudFront |
+| Local/in-process cache | Caffeine (Java), lru-cache (Node) |
+| Session store | Redis |
+| Rate limiting counters | Redis (INCR + TTL), Redis + Lua scripts |
+| Distributed lock | Redis (Redlock), Zookeeper |
+
+**Pattern:** `Client → App Server → Redis (cache-aside) → DB (on cache miss)`
+
+---
+
+## 5. Databases
+
+| Need | Common Tech |
+|---|---|
+| Relational / transactional data | PostgreSQL, MySQL |
+| High write-throughput, flexible schema | MongoDB, Cassandra |
+| Wide-column, huge scale, time-series-ish | Cassandra, ScyllaDB, HBase |
+| Key-value at massive scale | DynamoDB, Redis |
+| Graph relationships | Neo4j, Amazon Neptune |
+| Time-series data (metrics, IoT) | InfluxDB, TimescaleDB, Prometheus |
+| Search / full-text search | **Elasticsearch**, OpenSearch, Algolia |
+| Analytics / OLAP / data warehouse | Snowflake, BigQuery, Redshift, ClickHouse |
+| Object/blob storage (files, images, videos) | AWS S3, GCS, MinIO |
+
+**Pattern:** Read-heavy → add read replicas. Write-heavy/huge scale → shard/partition. Polyglot persistence is normal (Postgres for core data + Elasticsearch for search + Redis for cache).
+
+---
+
+## 6. Data Consistency & Scaling Patterns
+
+| Need | Common Tech / Pattern |
+|---|---|
+| DB replication (read scaling) | Primary-replica (Postgres streaming replication, MySQL replicas) |
+| DB sharding (write scaling) | Vitess, Citus (Postgres), app-level sharding |
+| Distributed transactions | Saga pattern, 2-phase commit (rare), outbox pattern |
+| Strong consistency across services | Distributed consensus — Zookeeper, etcd, Raft |
+| Eventual consistency | Event-driven sync via Kafka + CQRS |
+| CQRS (separate read/write models) | Write to Postgres, project to Elasticsearch/Redis for reads |
+
+---
+
+## 7. Search
+
+| Need | Common Tech |
+|---|---|
+| Full-text search, filters, facets | Elasticsearch, OpenSearch |
+| Typo-tolerant instant search (e.g. e-commerce) | Algolia, Meilisearch |
+| Vector/semantic search (AI/embeddings) | Pinecone, Weaviate, Milvus, pgvector |
+
+---
+
+## 8. Real-Time Features
+
+| Need | Common Tech |
+|---|---|
+| Real-time chat / live updates | WebSockets (Socket.io), Server-Sent Events |
+| Presence / online status | Redis (with TTL keys) |
+| Notifications (push) | Firebase Cloud Messaging, APNs, OneSignal |
+| Live collaborative editing | WebSockets + CRDT/OT (e.g. Yjs) |
+| Video/audio streaming | WebRTC, Agora, Twilio |
+
+---
+
+## 9. Observability
+
+| Need | Common Tech |
+|---|---|
+| Metrics collection | Prometheus |
+| Dashboards | Grafana |
+| Centralized logging | ELK Stack (Elasticsearch, Logstash, Kibana), Loki |
+| Distributed tracing | Jaeger, Zipkin, OpenTelemetry |
+| Error tracking | Sentry, Rollbar |
+| Alerting | Prometheus Alertmanager, PagerDuty, Opsgenie |
+
+---
+
+## 10. Security & Auth
+
+| Need | Common Tech |
+|---|---|
+| Authentication | OAuth2, JWT, Keycloak, Auth0, Firebase Auth |
+| Authorization | RBAC/ABAC, OPA (Open Policy Agent) |
+| Secrets management | HashiCorp Vault, AWS Secrets Manager |
+| API rate limiting / abuse prevention | Redis-based limiter, Kong plugins, Cloudflare |
+| DDoS protection | Cloudflare, AWS Shield |
+
+---
+
+## 11. Infrastructure / Deployment
+
+| Need | Common Tech |
+|---|---|
+| Containerization | Docker |
+| Orchestration | Kubernetes (K8s), ECS |
+| CI/CD | GitHub Actions, Jenkins, GitLab CI, ArgoCD |
+| Infrastructure as Code | Terraform, Pulumi, CloudFormation |
+| Service mesh | Istio, Linkerd |
+| Config management | Consul, etcd, K8s ConfigMaps |
+
+---
+
+## 12. Common End-to-End Flow (Typical Web App)
+
+```
+Client
+  │
+  ▼
+CDN (static assets) ── Cloudflare / CloudFront
+  │
+  ▼
+Load Balancer ── Nginx / ALB
+  │
+  ▼
+API Gateway ── Kong / AWS API Gateway
+  │
+  ▼
+App Servers (stateless) ── Node.js / Spring Boot / Django
+  │
+  ├──► Cache (read-through) ── Redis
+  ├──► Primary DB ── PostgreSQL / MySQL
+  ├──► Search index ── Elasticsearch
+  ├──► Async events ── Kafka → Consumers (email service, analytics, audit log)
+  └──► Object storage ── S3 (images, files)
+
+Observability sidecar throughout: Prometheus + Grafana + ELK + Jaeger
+```
+
+---
+
+## 13. Quick "Which One Do I Pick" Rules of Thumb
+
+- **Need to decouple services / handle spikes / multiple consumers of one event** → Kafka (or RabbitMQ/SQS if simpler queueing is enough)
+- **Need to speed up repeated reads / reduce DB load** → Redis cache-aside
+- **Need full-text or fuzzy search** → Elasticsearch
+- **Need strong ACID transactions** → PostgreSQL/MySQL
+- **Need massive horizontal write scale, flexible schema** → Cassandra/DynamoDB/MongoDB
+- **Need real-time bidirectional updates** → WebSockets + Redis pub/sub
+- **Need to store files/images/videos** → S3-compatible object storage + CDN in front
+- **Need to know what's happening in prod** → Prometheus + Grafana + ELK + Sentry
+
+---
+
+*Rule of thumb: don't reach for Kafka/Cassandra/Elasticsearch on day one unless you actually have the scale problem — Postgres + Redis + a simple queue covers a huge percentage of real systems.*
